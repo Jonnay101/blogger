@@ -12,8 +12,12 @@ import (
 	"github.com/music-tribe/uuid"
 )
 
-// Entry -
-type Entry struct {
+// Entry shows the available methods on the Entry interface
+type Entry interface {
+	BindRequestParams(r *http.Request) error
+}
+
+type entry struct {
 	UUID      uuid.UUID  `json:"uuid,omitempty"`
 	Author    string     `json:"author,omitempty"`
 	Title     string     `json:"title,omitempty"`
@@ -23,7 +27,7 @@ type Entry struct {
 }
 
 // BindRequestParams -
-func (e *Entry) BindRequestParams(r *http.Request) error {
+func (e *entry) BindRequestParams(r *http.Request) error {
 	routeParams := mux.Vars(r)
 	JSONBuffer, err := encodeRouteParamsToJSONBuffer(routeParams)
 	if err != nil {
@@ -33,7 +37,7 @@ func (e *Entry) BindRequestParams(r *http.Request) error {
 }
 
 // BindRequestBody -
-func (e *Entry) BindRequestBody(r *http.Request) error {
+func (e *entry) BindRequestBody(r *http.Request) error {
 	if r.Body == nil {
 		return errors.New("request body is empty")
 	}
@@ -47,13 +51,9 @@ func (e *Entry) BindRequestBody(r *http.Request) error {
 
 func encodeRouteParamsToJSONBuffer(routeParams map[string]string) (*bytes.Buffer, error) {
 	JSONBuffer := bytes.NewBuffer([]byte{})
-	err := json.NewEncoder(JSONBuffer).Encode(routeParams)
-	if err != nil {
-		return nil, err
-	}
-	return JSONBuffer, nil
+	return JSONBuffer, json.NewEncoder(JSONBuffer).Encode(routeParams)
 }
 
-func (e *Entry) bindJSONBufferToBlogEntry(JSONBuffer *bytes.Buffer) error {
+func (e *entry) bindJSONBufferToBlogEntry(JSONBuffer *bytes.Buffer) error {
 	return json.NewDecoder(JSONBuffer).Decode(&e)
 }
