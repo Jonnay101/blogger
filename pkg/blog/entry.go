@@ -1,6 +1,8 @@
 package blog
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -9,7 +11,9 @@ import (
 
 // Entry shows the available methods on the Entry interface
 type Entry interface {
-	BindRequestParams(r *http.Request) error
+	SetEntryFieldsFromRequestBody(r *http.Request) error
+	SetBlogEntryID(uuid.UUID)
+	ReturnEntryAsJSON() ([]byte, error)
 }
 
 type entry struct {
@@ -19,6 +23,30 @@ type entry struct {
 	Content   string     `json:"content,omitempty"`
 	CreatedAt *time.Time `json:"date,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+// NewEntry creates a new
+func NewEntry() Entry {
+	return &entry{}
+}
+
+func (e *entry) SetEntryFieldsFromRequestBody(r *http.Request) error {
+	byt, err := ioutil.ReadAll(r.Body)
+	if r.Body != nil {
+		defer r.Body.Close()
+	}
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(byt, &e)
+}
+
+func (e *entry) SetBlogEntryID(id uuid.UUID) {
+	e.UUID = id
+}
+
+func (e *entry) ReturnEntryAsJSON() ([]byte, error) {
+	return json.Marshal(e)
 }
 
 // // BindRouteParamsQueriesAndBody
