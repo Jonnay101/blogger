@@ -24,6 +24,6 @@ func NewHandler(db database) *http.Handler {
 // ServeHTTP - required to make Handler an http.Handler
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var blogEntry blog.Entry
-	blogEntry.BindRouteParamsQueriesAndBody()
+	var routeParams := mux.Vars()
 	h.db.AddBlogEntry()
 }
