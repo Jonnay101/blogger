@@ -11,13 +11,6 @@ import (
 	"github.com/music-tribe/uuid"
 )
 
-// Entry shows the available methods on the Entry interface
-// type Entry interface {
-// 	SetEntryFieldsFromRequestBody(r *http.Request) error
-// 	ReturnEntryAsJSON() ([]byte, error)
-// 	GetStoragePath() string
-// }
-
 // Entry holds all data and content from a blog post
 type Entry struct {
 	UUID        uuid.UUID  `json:"_id" bson:"id"`
