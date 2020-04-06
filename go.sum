@@ -3,5 +3,6 @@ github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8/go.mod h1:xkRDCp4j0
 github.com/gorilla/mux v1.7.4 h1:VuZ8uybHlWmqV03+zRzdwKL4tUnIp1MAQtp1mIFE1bc=
 github.com/gorilla/mux v1.7.4/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
 github.com/jonnay101/icon v0.0.0-20200404084625-0c4abb3c2e2c h1:mHdkuPhlEEoW92DTDMFxqLabKcJao0A1hbgYjcLPHeQ=
+github.com/jonnay101/icon v0.0.0-20200405112809-437a5981df84 h1:dSItVg7f80+zMD2D2lcLDPdvSJdYZhKJnUA0Ci0/P6c=
 github.com/music-tribe/uuid v1.1.1 h1:SByX8fb0szkngpbChP1cFusM6+dCF8ef29oufUQfeJ8=
 github.com/music-tribe/uuid v1.1.1/go.mod h1:aOON+2t+Tf2gz6AWyWNUZtnj5oi3vVvXCjjPlPEVv3Q=
