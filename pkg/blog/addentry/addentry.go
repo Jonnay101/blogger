@@ -5,15 +5,14 @@ import (
 
 	"github.com/Jonnay101/icon/pkg/blog"
 	"github.com/Jonnay101/icon/pkg/glitch"
-	"github.com/music-tribe/uuid"
 )
 
 // methods required for this handler
 type database interface {
-	AddBlogEntry(blog.Entry) error
+	AddBlogEntry(*blog.Entry) error
 }
 
-// Handler satisfies http.Handler interface with ServeHTTP
+// handler satisfies http.Handler interface with ServeHTTP
 type handler struct {
 	db database
 }
@@ -27,8 +26,6 @@ func NewHandler(db database) http.Handler {
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	blogEntry := blog.NewEntry()
-
-	blogEntry.SetBlogEntryID(uuid.New())
 
 	if err := blogEntry.SetEntryFieldsFromRequestBody(r); err != nil {
 		glitch.LogError(err)
