@@ -1,17 +1,22 @@
 package database
 
-import "github.com/Jonnay101/icon/pkg/blog"
+import (
+	"fmt"
+
+	"github.com/Jonnay101/icon/pkg/blog"
+)
 
 // Session -
 type Session struct{}
 
 // NewDatabaseSession -
-func NewDatabaseSession() *Session {
-	return &Session{}
+func NewDatabaseSession() (*Session, error) {
+	return &Session{}, nil
 }
 
 // CreateBlogPost -
-func (s *Session) CreateBlogPost(blog.PostData) error {
+func (s *Session) CreateBlogPost(blogPost *blog.PostData) error {
 	// create a new blog post in the database
+	fmt.Println(blogPost)
 	return nil
 }
