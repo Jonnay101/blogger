@@ -19,7 +19,7 @@ type server struct {
 // NewServer -
 func NewServer() http.Handler {
 	s := &server{}
-	s.routes()
+	s.setRoutes()
 	return s
 }
 
@@ -30,16 +30,16 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *server) respond(w http.ResponseWriter, r *http.Request, responseData interface{}, statusCode int) {
 	w.WriteHeader(statusCode)
 	if responseData != nil {
-		if err := json.NewEncoder(w).Encode(iface); err != nil {
+		if err := json.NewEncoder(w).Encode(&responseData); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
 		}
 	}
 }
 
-func (s *server) decodeRequestBody(w http.ResponseWriter, r *http.Request, iface interface{}) error {
+func (s *server) decodeRequestBody(w http.ResponseWriter, r *http.Request, bindObject interface{}) error {
 	if r.Body != nil {
 		defer r.Body.Close()
 	}
-	return json.NewDecoder(r.Body).Decode(&iface)
+	return json.NewDecoder(r.Body).Decode(&bindObject)
 }
