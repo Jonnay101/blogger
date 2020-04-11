@@ -19,9 +19,9 @@ func main() {
 
 // Run -
 func Run() error {
-	// all normal main code in here with easy error returning
 	database := database.NewDatabaseSession()
-	blog := blog.NewServer(database)
+	blog := blog.NewServer()
+	blog.SetDatabase(database)
 	log.Fatal(http.ListenAndServe(":8080", blog))
 	return nil
 }
