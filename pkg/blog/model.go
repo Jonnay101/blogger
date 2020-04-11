@@ -6,8 +6,8 @@ import (
 	"github.com/music-tribe/uuid"
 )
 
-// Data holds all data and content from a blog postData
-type Data struct {
+// PostData holds all data and content from a blog postData
+type PostData struct {
 	UUID        uuid.UUID  `json:"_id" bson:"id"`
 	Author      string     `json:"author"`
 	Title       string     `json:"title"`
