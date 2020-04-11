@@ -7,19 +7,19 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Server -
+type Server interface {
+	SetDatabase(db database)
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
+}
+
 type database interface {
-	CreateBlogPost(PostData) error
+	CreateBlogPost(*PostData) error
 }
 
 type server struct {
 	DB     database
 	Router *mux.Router
-}
-
-// Server -
-type Server interface {
-	SetDatabase(db database)
-	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 // NewServer -
@@ -29,8 +29,19 @@ func NewServer() Server {
 	return s
 }
 
+func (s *server) SetDatabase(db database) {
+	s.DB = db
+}
+
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.Router.ServeHTTP(w, r)
+}
+
+func (s *server) decodeRequestBody(w http.ResponseWriter, r *http.Request, bindObject interface{}) error {
+	if r.Body != nil {
+		defer r.Body.Close()
+	}
+	return json.NewDecoder(r.Body).Decode(&bindObject)
 }
 
 func (s *server) respond(w http.ResponseWriter, r *http.Request, responseData interface{}, statusCode int) {
@@ -41,15 +52,4 @@ func (s *server) respond(w http.ResponseWriter, r *http.Request, responseData in
 			w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
 		}
 	}
-}
-
-func (s *server) decodeRequestBody(w http.ResponseWriter, r *http.Request, bindObject interface{}) error {
-	if r.Body != nil {
-		defer r.Body.Close()
-	}
-	return json.NewDecoder(r.Body).Decode(&bindObject)
-}
-
-func (s *server) SetDatabase(db database) {
-	s.DB = db
 }
