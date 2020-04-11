@@ -16,8 +16,14 @@ type server struct {
 	Router *mux.Router
 }
 
+// Server -
+type Server interface {
+	SetDatabase(db database)
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
+}
+
 // NewServer -
-func NewServer() http.Handler {
+func NewServer() Server {
 	s := &server{}
 	s.setRoutes()
 	return s
@@ -42,4 +48,8 @@ func (s *server) decodeRequestBody(w http.ResponseWriter, r *http.Request, bindO
 		defer r.Body.Close()
 	}
 	return json.NewDecoder(r.Body).Decode(&bindObject)
+}
+
+func (s *server) SetDatabase(db database) {
+	s.DB = db
 }
