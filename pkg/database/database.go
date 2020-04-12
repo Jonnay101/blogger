@@ -2,6 +2,7 @@ package database
 
 import (
 	"github.com/Jonnay101/icon/pkg/blog"
+	"github.com/Jonnay101/icon/pkg/glitch"
 	"github.com/globalsign/mgo"
 )
 
@@ -20,8 +21,12 @@ func NewDatabaseSession(mongoURL string) (*Session, error) {
 // StoreBlogPost - store a blog post in the blog collection
 func (s *Session) StoreBlogPost(blogPost *blog.PostData) error {
 
-	collection := s.DB("omfg").C("blog")
-	err := collection.Insert(blogPost)
+	blogPosts := s.DB("omfg").C("blog")
 
-	return err
+	q := blogPosts.FindId(blogPost.DatabaseKey)
+	if n, _ := q.Count(); n > 0 {
+		return glitch.ErrItemAlreadyExists
+	}
+
+	return blogPosts.Insert(blogPost)
 }
