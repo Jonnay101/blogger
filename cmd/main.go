@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+
 	if err := Run(); err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
@@ -20,18 +21,28 @@ func main() {
 
 // Run -
 func Run() error {
-	database, err := database.NewDatabaseSession()
+
+	mongoURL, err := mustenv("MONGO_URL")
 	if err != nil {
 		return err
 	}
+
+	database, err := database.NewDatabaseSession(mongoURL)
+	if err != nil {
+		return err
+	}
+
 	blog := blog.NewServer()
 	blog.SetDatabase(database)
-	srv := configureServer(getPortFromEnvVars(), blog)
+
+	srv := configureServer(getEnvOrDefault("PORT", "8080"), blog)
 	log.Fatal(srv.ListenAndServe())
+
 	return nil
 }
 
 func configureServer(port string, handler http.Handler) http.Server {
+
 	return http.Server{
 		Addr:         fmt.Sprintf(":%s", port),
 		ReadTimeout:  15 * time.Second,
@@ -40,10 +51,22 @@ func configureServer(port string, handler http.Handler) http.Server {
 	}
 }
 
-func getPortFromEnvVars() string {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+func getEnvOrDefault(envVar, def string) string {
+
+	ev := os.Getenv(envVar)
+	if envVar == "" {
+		ev = def
 	}
-	return port
+
+	return ev
+}
+
+func mustenv(envVar string) (string, error) {
+
+	ev := os.Getenv(envVar)
+	if ev == "" {
+		return "", fmt.Errorf("Cannot find %s environment variable", envVar)
+	}
+
+	return ev, nil
 }
