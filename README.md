@@ -6,7 +6,9 @@ Site requirements
 - Blog
 - Database
 
-##Terminology
+#Terminology
+
+##Prefixes
 
 ###Database
 - Store
