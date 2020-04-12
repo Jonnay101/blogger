@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Jonnay101/icon/pkg/blog"
+	"github.com/globalsign/mgo"
 	"github.com/pkg/errors"
 )
 
@@ -13,16 +14,20 @@ var (
 )
 
 // Session -
-type Session struct{}
-
-// NewDatabaseSession -
-func NewDatabaseSession() (*Session, error) {
-	return &Session{}, nil
+type Session struct {
+	*mgo.Session
 }
 
-// StoreBlogPost -
+// NewDatabaseSession -
+func NewDatabaseSession(mongoURL string) (*Session, error) {
+
+	mgoSession, err := mgo.Dial(mongoURL)
+	return &Session{mgoSession}, err
+}
+
+// StoreBlogPost - store a blog post in the blog collection
 func (s *Session) StoreBlogPost(blogPost *blog.PostData) error {
-	// create a new blog post in the database
+
 	fmt.Println(blogPost)
 	return nil
 }
