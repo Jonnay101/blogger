@@ -22,8 +22,6 @@ func (s *Session) StoreBlogPost(blogPost *blog.PostData) error {
 
 	collection := s.DB("omfg").C("blog")
 	err := collection.Insert(blogPost)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
