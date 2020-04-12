@@ -14,7 +14,7 @@ type Server interface {
 }
 
 type database interface {
-	CreateBlogPost(*PostData) error
+	StoreBlogPost(*PostData) error
 }
 
 type server struct {
