@@ -15,6 +15,7 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 		}
 
 		blogPost.setUUID()
+		blogPost.setDateCreatedAt()
 		blogPost.setDatabaseKey()
 
 		if err := s.DB.CreateBlogPost(&blogPost); err != nil {
