@@ -1,8 +1,6 @@
 package database
 
 import (
-	"fmt"
-
 	"github.com/Jonnay101/icon/pkg/blog"
 	"github.com/globalsign/mgo"
 	"github.com/pkg/errors"
@@ -28,6 +26,10 @@ func NewDatabaseSession(mongoURL string) (*Session, error) {
 // StoreBlogPost - store a blog post in the blog collection
 func (s *Session) StoreBlogPost(blogPost *blog.PostData) error {
 
-	fmt.Println(blogPost)
+	collection := s.DB("omfg").C("blog")
+	err := collection.Insert(blogPost)
+	if err != nil {
+		return err
+	}
 	return nil
 }
