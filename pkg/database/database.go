@@ -3,12 +3,6 @@ package database
 import (
 	"github.com/Jonnay101/icon/pkg/blog"
 	"github.com/globalsign/mgo"
-	"github.com/pkg/errors"
-)
-
-var (
-	ErrItemAlreadyExists  = errors.New("item already exists")
-	ErrUnknownServerError = errors.New("unknown server error")
 )
 
 // Session -
