@@ -9,22 +9,27 @@ import (
 
 // PostData holds all data and content from a blog postData
 type PostData struct {
-	UUID        uuid.UUID  `json:"_id" bson:"id"`
-	Author      string     `json:"author"`
-	Title       string     `json:"title"`
-	CreatedAt   *time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt   *time.Time `json:"updated_at" bson:"updated_at"`
-	Content     string     `json:"content"`
-	Category    string     `json:"category"`
-	DatabaseKey string     `json:"database_key"`
-	Images      []string   `json:"images"` // a list of image IDs - images already uploaded
+	UUID        uuid.UUID `json:"_id" bson:"id"`
+	Author      string    `json:"author"`
+	Title       string    `json:"title"`
+	CreatedAt   time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" bson:"updated_at"`
+	Content     string    `json:"content"`
+	Category    string    `json:"category"`
+	DatabaseKey string    `json:"database_key"`
+	Images      []string  `json:"images"` // a list of image IDs - images already uploaded
 }
 
 func (pd *PostData) setUUID() {
 	pd.UUID = uuid.New()
 }
 
+func (pd *PostData) setDateCreatedAt() {
+	pd.CreatedAt = time.Now()
+	pd.UpdatedAt = pd.CreatedAt
+}
+
 func (pd *PostData) setDatabaseKey() {
 	t := pd.CreatedAt
-	pd.DatabaseKey = fmt.Sprintf("/%d/%d/%d/%s", t.Year(), t.Month(), t.Day(), pd.Title)
+	pd.DatabaseKey = fmt.Sprintf("/%v/%v/%v/%s", t.Year(), t.Month(), t.Day(), pd.Title)
 }
