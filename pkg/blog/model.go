@@ -1,6 +1,7 @@
 package blog
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/music-tribe/uuid"
@@ -15,6 +16,15 @@ type PostData struct {
 	UpdatedAt   *time.Time `json:"updated_at" bson:"updated_at"`
 	Content     string     `json:"content"`
 	Category    string     `json:"category"`
-	StoragePath string     `json:"storage_path"`
+	DatabaseKey string     `json:"database_key"`
 	Images      []string   `json:"images"` // a list of image IDs - images already uploaded
+}
+
+func (pd *PostData) setUUID() {
+	pd.UUID = uuid.New()
+}
+
+func (pd *PostData) setDatabaseKey() {
+	t := pd.CreatedAt
+	pd.DatabaseKey = fmt.Sprintf("/%d/%d/%d/%s", t.Year(), t.Month(), t.Day(), pd.Title)
 }
