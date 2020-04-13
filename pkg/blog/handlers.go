@@ -39,9 +39,12 @@ func (s *server) setBlogPostFields(w http.ResponseWriter, r *http.Request, blogP
 
 	blogPost.UUID = uuid.New()
 
-	currentTime := time.Now()
+	currentTime := time.Now().UTC().Truncate(time.Second)
 	blogPost.CreatedAt = currentTime
 	blogPost.UpdatedAt = currentTime
+	blogPost.Year = currentTime.Year()
+	blogPost.Month = currentTime.Month().String()
+	blogPost.Day = currentTime.Day()
 
 	blogPost.DatabaseKey = s.createDatabaseKey(w, r, blogPost)
 }
@@ -53,11 +56,11 @@ func (s *server) createDatabaseKey(w http.ResponseWriter, r *http.Request, pd *P
 	}
 
 	return fmt.Sprintf(
-		"/%d/%d/%d/%s",
-		pd.CreatedAt.Year(),
-		pd.CreatedAt.Month(),
-		pd.CreatedAt.Day(),
-		pd.Title,
+		"/%d/%s/%d/%s",
+		pd.Year,
+		pd.Month,
+		pd.Day,
+		pd.UUID.String(),
 	)
 }
 
