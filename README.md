@@ -6,16 +6,16 @@ Site requirements
 - Blog
 - Database
 
-#Terminology
+# Terminology
 
-##Prefixes
+## Prefixes
 
-###Database
+### Database
 - Store
 - Find
 - Update
 - Delete
 
-###Types
+### Types
 - Set
 - Get
