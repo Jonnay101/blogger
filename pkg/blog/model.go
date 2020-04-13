@@ -22,3 +22,13 @@ type PostData struct {
 	Metadata    []string  `json:"metadata"`
 	Images      []string  `json:"images"` // a list of image IDs - images already uploaded
 }
+
+// RequestParams -
+type RequestParams struct {
+	DatabaseKey string `json:"_id" bson:"_id"`
+	Title       string `json:"title"`
+	Category    string `json:"category"`
+	Year        string `json:"year"`
+	Month       string `json:"month"`
+	Day         string `json:"day"`
+}
