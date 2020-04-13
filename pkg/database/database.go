@@ -47,3 +47,20 @@ func (s *Session) FindBlogPostByID(reqParams *blog.RequestParams) (*blog.PostDat
 
 	return blogPost, nil
 }
+
+// FindAllBlogPosts -
+func (s *Session) FindAllBlogPosts(reqParams *blog.RequestParams) ([]*blog.PostData, error) {
+
+	blogPosts := s.DB("omfg").C("blog")
+	var matchingBlogPosts []*blog.PostData
+
+	q := blogPosts.Find(reqParams.QueryMap)
+	if err := q.All(&matchingBlogPosts); err != nil {
+		if err == mgo.ErrNotFound {
+			return nil, glitch.ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return matchingBlogPosts, nil
+}
