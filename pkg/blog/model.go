@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/music-tribe/uuid"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // PostData holds all data and content from a blog postData
@@ -25,10 +26,13 @@ type PostData struct {
 
 // RequestParams -
 type RequestParams struct {
-	DatabaseKey string `json:"_id" bson:"_id"`
-	Title       string `json:"title"`
-	Category    string `json:"category"`
-	Year        string `json:"year"`
-	Month       string `json:"month"`
-	Day         string `json:"day"`
+	UUID        uuid.UUID `json:"uuid" bson:"uuid"`
+	DatabaseKey string    `json:"_id"`
+	Title       string    `json:"title"`
+	Author      string    `json:"author"`
+	Category    string    `json:"category"`
+	Year        int       `json:"year"`
+	Month       string    `json:"month"`
+	Day         int       `json:"day"`
+	QueryMap    bson.M    `json:"-"`
 }
