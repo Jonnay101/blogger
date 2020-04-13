@@ -15,6 +15,7 @@ type Server interface {
 
 type database interface {
 	StoreBlogPost(*PostData) error
+	FindBlogPostByID(*RequestParams) (*PostData, error)
 }
 
 type server struct {
