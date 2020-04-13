@@ -30,3 +30,37 @@ func (s *Session) StoreBlogPost(blogPost *blog.PostData) error {
 
 	return blogPosts.Insert(blogPost)
 }
+
+// FindBlogPostByID - find a single blog post using the id
+func (s *Session) FindBlogPostByID(reqParams *blog.RequestParams) (*blog.PostData, error) {
+
+	blogPosts := s.DB("omfg").C("blog")
+	blogPost := &blog.PostData{}
+
+	q := blogPosts.FindId(reqParams.DatabaseKey)
+	if err := q.One(&blogPost); err != nil {
+		if err == mgo.ErrNotFound {
+			return nil, glitch.ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return blogPost, nil
+}
+
+// FindAllBlogPosts -
+func (s *Session) FindAllBlogPosts(reqParams *blog.RequestParams) ([]*blog.PostData, error) {
+
+	blogPosts := s.DB("omfg").C("blog")
+	var matchingBlogPosts []*blog.PostData
+
+	q := blogPosts.Find(reqParams.QueryMap)
+	if err := q.All(&matchingBlogPosts); err != nil {
+		if err == mgo.ErrNotFound {
+			return nil, glitch.ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return matchingBlogPosts, nil
+}

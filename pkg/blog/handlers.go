@@ -4,10 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Jonnay101/icon/pkg/glitch"
+	"github.com/gorilla/mux"
 	"github.com/music-tribe/uuid"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // HandlerCreatePost stores a newly created blog post
@@ -15,12 +19,57 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		blogPost := s.bindRequestBody(w, r)
-
 		s.setBlogPostFields(w, r, blogPost)
-
 		s.storeBlogPost(w, r, blogPost)
+		s.respond(w, r, blogPost, http.StatusOK)
+
+		return
+	}
+}
+
+func (s *server) HandlerGetPost() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		reqParams, err := s.bindRequestParams(w, r)
+		if err != nil {
+			s.respond(w, r, err, http.StatusBadRequest)
+			return
+		}
+
+		var statusCode int
+		blogPost, err := s.DB.FindBlogPostByID(reqParams)
+		if err != nil {
+			if err == glitch.ErrRecordNotFound {
+				statusCode = http.StatusNotFound
+			}
+			statusCode = http.StatusInternalServerError
+			s.respond(w, r, err, statusCode)
+			return
+		}
 
 		s.respond(w, r, blogPost, http.StatusOK)
+	}
+}
+
+func (s *server) HandlerGetAllPosts() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		reqParams, err := s.bindRequestParams(w, r)
+		if err != nil {
+			s.respond(w, r, err, http.StatusBadRequest)
+			return
+		}
+
+		var statusCode int
+		blogPosts, err := s.DB.FindAllBlogPosts(reqParams)
+		if err != nil {
+			if err == glitch.ErrRecordNotFound {
+				statusCode = http.StatusNotFound
+			}
+			statusCode = http.StatusInternalServerError
+			s.respond(w, r, blogPosts, statusCode)
+			return
+		}
 		return
 	}
 }
@@ -32,7 +81,84 @@ func (s *server) bindRequestBody(w http.ResponseWriter, r *http.Request) *PostDa
 		s.respond(w, r, err, http.StatusBadRequest)
 		return nil
 	}
+
 	return &blogPost
+}
+
+func (s *server) bindRequestParams(w http.ResponseWriter, r *http.Request) (*RequestParams, error) {
+
+	var reqParams RequestParams
+	var err error
+	routes := mux.Vars(r)
+
+	reqParams.DatabaseKey = strings.TrimPrefix(r.URL.Path, "/blog")
+
+	if uuidString, ok := routes["uuid"]; ok {
+		reqParams.UUID, err = uuid.Parse(uuidString)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	reqParams.Year, err = getRequestParamInt(w, r, "year")
+	if err != nil {
+		return nil, err
+	}
+
+	reqParams.Month, err = getRequestParamString(w, r, "month")
+	if err != nil {
+		return nil, err
+	}
+
+	reqParams.Day, err = getRequestParamInt(w, r, "day")
+	if err != nil {
+		return nil, err
+	}
+
+	queries := r.URL.Query()
+	reqParams.Author = queries.Get("author")
+	reqParams.Title = queries.Get("title")
+	reqParams.Category = queries.Get("category")
+
+	if err := setQueryMap(&reqParams); err != nil {
+		return nil, err
+	}
+
+	return &reqParams, nil
+}
+
+func setQueryMap(reqParams *RequestParams) error {
+	reqParams.QueryMap = bson.M{}
+
+	if reqParams.UUID != uuid.Nil {
+		reqParams.QueryMap["_id"] = reqParams.DatabaseKey
+	}
+
+	if reqParams.Year != 0 {
+		reqParams.QueryMap["year"] = reqParams.Year
+	}
+
+	if reqParams.Month != "" {
+		reqParams.QueryMap["month"] = reqParams.Month
+	}
+
+	if reqParams.Day != 0 {
+		reqParams.QueryMap["day"] = reqParams.Day
+	}
+
+	if reqParams.Title != "" {
+		reqParams.QueryMap["title"] = reqParams.Title
+	}
+
+	if reqParams.Author != "" {
+		reqParams.QueryMap["author"] = reqParams.Author
+	}
+
+	if reqParams.Category != "" {
+		reqParams.QueryMap["category"] = reqParams.Category
+	}
+
+	return nil
 }
 
 func (s *server) setBlogPostFields(w http.ResponseWriter, r *http.Request, blogPost *PostData) {
@@ -65,6 +191,7 @@ func (s *server) createDatabaseKey(w http.ResponseWriter, r *http.Request, pd *P
 }
 
 func (s *server) storeBlogPost(w http.ResponseWriter, r *http.Request, blogPost *PostData) {
+
 	if err := s.DB.StoreBlogPost(blogPost); err != nil {
 		if err == glitch.ErrItemAlreadyExists {
 			s.respond(w, r, err, http.StatusConflict)
@@ -73,4 +200,53 @@ func (s *server) storeBlogPost(w http.ResponseWriter, r *http.Request, blogPost 
 		s.respond(w, r, err, http.StatusInternalServerError)
 		return
 	}
+}
+
+func (s *server) findBlogPost(w http.ResponseWriter, r *http.Request, reqParams *RequestParams) (*PostData, error) {
+
+	blogPost, err := s.DB.FindBlogPostByID(reqParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return blogPost, nil
+}
+
+func getRequestParamInt(w http.ResponseWriter, r *http.Request, param string) (int, error) {
+	var num int
+	var err error
+	routeParams := mux.Vars(r)
+	queries := r.URL.Query()
+
+	if item, ok := routeParams[param]; ok {
+		num, err = strconv.Atoi(item)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	if item, ok := queries[param]; ok {
+		num, err = strconv.Atoi(item[0])
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return num, nil
+}
+
+func getRequestParamString(w http.ResponseWriter, r *http.Request, param string) (string, error) {
+	var str string
+	routeParams := mux.Vars(r)
+	queries := r.URL.Query()
+
+	if item, ok := routeParams[param]; ok {
+		str = item
+	}
+
+	if item, ok := queries[param]; ok {
+		str = item[0]
+	}
+
+	return str, nil
 }
