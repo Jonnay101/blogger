@@ -16,6 +16,7 @@ type Server interface {
 type database interface {
 	StoreBlogPost(*PostData) error
 	FindBlogPostByID(*RequestParams) (*PostData, error)
+	FindAllBlogPosts(*RequestParams) ([]*PostData, error)
 }
 
 type server struct {
@@ -42,11 +43,13 @@ func (s *server) decodeRequestBody(w http.ResponseWriter, r *http.Request, bindO
 	if r.Body != nil {
 		defer r.Body.Close()
 	}
+
 	return json.NewDecoder(r.Body).Decode(&bindObject)
 }
 
 func (s *server) respond(w http.ResponseWriter, r *http.Request, responseData interface{}, statusCode int) {
 	w.WriteHeader(statusCode)
+
 	if responseData != nil {
 		if err := json.NewEncoder(w).Encode(&responseData); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
