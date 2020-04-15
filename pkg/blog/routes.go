@@ -22,6 +22,9 @@ func (s *server) setRoutes() {
 	s.Router.Handle("/blog/{year}", s.HandlerGetAllPosts()).Methods(http.MethodGet)
 	s.Router.Handle("/blog", s.HandlerGetAllPosts()).Methods(http.MethodGet)
 
+	// handle updatind a blog post
+	s.Router.Handle("/blog/{year}/{month}/{day}/{uuid}", s.HandlerUpdatePost()).Methods(http.MethodPut)
+
 	// handle removing blog posts
 	s.Router.Handle("/blog/{year}/{month}/{day}/{uuid}", s.HandlerDeletePost()).Methods(http.MethodDelete)
 }
