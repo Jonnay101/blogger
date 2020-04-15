@@ -70,6 +70,21 @@ func (s *Session) FindAllBlogPosts(reqParams *blog.RequestParams) ([]*blog.PostD
 	return matchingBlogPosts, nil
 }
 
+// UpdateBlogPost - updates the post with the corresponding id
+func (s *Session) UpdateBlogPost(blogPost *PostData) error {
+
+	blogPosts := s.getBlogCollection()
+
+	if err := blogPosts.UpdateId(blogPost.DatabaseKey); err != nil {
+		if err == mgo.ErrNotFound {
+			return glitch.ErrRecordNotFound
+		}
+		return err
+	}
+
+	return nil
+}
+
 // RemoveBlogPost - removes the post matching the id
 func (s *Session) RemoveBlogPost(reqParams *blog.RequestParams) error {
 
