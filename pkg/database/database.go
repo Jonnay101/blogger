@@ -37,12 +37,12 @@ func (s *Session) StoreBlogPost(blogPost *blog.PostData) error {
 }
 
 // FindBlogPostByID - find a single blog post using the id
-func (s *Session) FindBlogPostByID(reqParams *blog.RequestParams) (*blog.PostData, error) {
+func (s *Session) FindBlogPostByID(id string) (*blog.PostData, error) {
 
 	blogPosts := s.getBlogCollection()
 	blogPost := &blog.PostData{}
 
-	q := blogPosts.FindId(reqParams.DatabaseKey)
+	q := blogPosts.FindId(id)
 	if err := q.One(&blogPost); err != nil {
 		if err == mgo.ErrNotFound {
 			return blogPost, glitch.ErrRecordNotFound
