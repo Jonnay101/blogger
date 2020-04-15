@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/Jonnay101/icon/pkg/glitch"
 	"github.com/gorilla/mux"
@@ -24,10 +23,7 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 			return
 		}
 
-		if err := s.setBlogPostFields(w, r, blogPost); err != nil {
-			s.respond(w, r, err, http.StatusBadRequest)
-			return
-		}
+		s.setBlogPostFields(w, r, blogPost)
 
 		if err := s.DB.StoreBlogPost(blogPost); err != nil {
 			if err == glitch.ErrItemAlreadyExists {
@@ -51,8 +47,7 @@ func (s *server) HandlerGetPost() http.HandlerFunc {
 			return
 		}
 
-		var statusCode int
-		blogPost, err := s.DB.FindBlogPostByID(reqParams)
+		blogPost, err := s.DB.FindBlogPostByID(reqParams.DatabaseKey)
 		if err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err, http.StatusNotFound)
@@ -75,7 +70,6 @@ func (s *server) HandlerGetAllPosts() http.HandlerFunc {
 			return
 		}
 
-		var statusCode int
 		blogPosts, err := s.DB.FindAllBlogPosts(reqParams)
 		if err != nil {
 			if err == glitch.ErrRecordNotFound {
@@ -93,18 +87,24 @@ func (s *server) HandlerGetAllPosts() http.HandlerFunc {
 func (s *server) HandlerUpdatePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		blogPost, err := s.bindRequestBody(w, r)
+		newBlogPost, err := s.bindRequestBody(w, r)
 		if err != nil {
 			s.respond(w, r, err, http.StatusBadRequest)
 			return
 		}
 
-		if err = errIfDatabaseKeysDontMatch(); err != nil {
-			s.respond(w, r, err, http.StatusBadRequest)
+		oldBlogPost, err := s.DB.FindBlogPostByID(newBlogPost.DatabaseKey)
+		if err != nil {
+			if err == glitch.ErrRecordNotFound {
+				s.respond(w, r, err, http.StatusNotFound)
+				return
+			}
+			s.respond(w, r, err, http.StatusInternalServerError)
 		}
 
-		var statusCode int
-		if err := s.DB.UpdateBlogPost(blogPost); err != nil {
+		ifNewBlogPostFieldValueIsZeroUseOldBlogPostFieldValue(oldBlogPost, newBlogPost)
+
+		if err := s.DB.UpdateBlogPost(newBlogPost); err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err, http.StatusNotFound)
 				return
@@ -113,7 +113,7 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 			return
 		}
 
-		s.respond(w, r, "OK", http.StatusOK)
+		s.respond(w, r, newBlogPost, http.StatusOK)
 	}
 }
 
@@ -122,7 +122,6 @@ func (s *server) HandlerDeletePost() http.HandlerFunc {
 
 		var reqParams RequestParams
 
-		var statusCode int
 		if err := s.DB.RemoveBlogPost(&reqParams); err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err, http.StatusNotFound)
@@ -143,6 +142,17 @@ func (s *server) bindRequestBody(w http.ResponseWriter, r *http.Request) (*PostD
 		return nil, err
 	}
 
+	dynamicRoutes := mux.Vars(r)
+
+	if uuidStr, ok := dynamicRoutes["uuid"]; ok {
+		var err error
+		blogPost.UUID, err = uuid.Parse(uuidStr)
+		if err != nil {
+			return nil, err
+		}
+		blogPost.DatabaseKey = getDatabaseKeyFromURLPath(r)
+	}
+
 	return &blogPost, nil
 }
 
@@ -152,7 +162,7 @@ func (s *server) bindRequestParams(w http.ResponseWriter, r *http.Request) (*Req
 	var err error
 	routes := mux.Vars(r)
 
-	reqParams.DatabaseKey = strings.TrimPrefix(r.URL.Path, "/blog")
+	reqParams.DatabaseKey = getDatabaseKeyFromURLPath(r)
 
 	if uuidString, ok := routes["uuid"]; ok {
 		reqParams.UUID, err = uuid.Parse(uuidString)
@@ -189,10 +199,13 @@ func (s *server) bindRequestParams(w http.ResponseWriter, r *http.Request) (*Req
 }
 
 func setQueryMap(reqParams *RequestParams) error {
+
 	reqParams.QueryMap = bson.M{}
 
 	if reqParams.UUID != uuid.Nil {
+		// when the uuid is passed in the url, only the _id needs to be queried
 		reqParams.QueryMap["_id"] = reqParams.DatabaseKey
+		return nil
 	}
 
 	if reqParams.Year != 0 {
@@ -226,7 +239,7 @@ func (s *server) setBlogPostFields(w http.ResponseWriter, r *http.Request, blogP
 
 	blogPost.UUID = uuid.New()
 
-	currentTime := time.Now().UTC().Truncate(time.Second)
+	currentTime := getCurrentUTCTime()
 	blogPost.CreatedAt = currentTime
 	blogPost.UpdatedAt = currentTime
 	blogPost.Year = currentTime.Year()
@@ -237,6 +250,7 @@ func (s *server) setBlogPostFields(w http.ResponseWriter, r *http.Request, blogP
 }
 
 func (s *server) createDatabaseKey(w http.ResponseWriter, r *http.Request, pd *PostData) string {
+
 	if pd.CreatedAt.IsZero() {
 		s.respond(w, r, errors.New("PostData CreatedAt field not set"), http.StatusBadRequest)
 		return ""
@@ -265,7 +279,7 @@ func (s *server) storeBlogPost(w http.ResponseWriter, r *http.Request, blogPost 
 
 func (s *server) findBlogPost(w http.ResponseWriter, r *http.Request, reqParams *RequestParams) (*PostData, error) {
 
-	blogPost, err := s.DB.FindBlogPostByID(reqParams)
+	blogPost, err := s.DB.FindBlogPostByID(reqParams.DatabaseKey)
 	if err != nil {
 		return nil, err
 	}
@@ -274,6 +288,7 @@ func (s *server) findBlogPost(w http.ResponseWriter, r *http.Request, reqParams 
 }
 
 func getRequestParamInt(w http.ResponseWriter, r *http.Request, param string) (int, error) {
+
 	var num int
 	var err error
 	routeParams := mux.Vars(r)
@@ -297,6 +312,7 @@ func getRequestParamInt(w http.ResponseWriter, r *http.Request, param string) (i
 }
 
 func getRequestParamString(w http.ResponseWriter, r *http.Request, param string) (string, error) {
+
 	var str string
 	routeParams := mux.Vars(r)
 	queries := r.URL.Query()
@@ -312,8 +328,6 @@ func getRequestParamString(w http.ResponseWriter, r *http.Request, param string)
 	return str, nil
 }
 
-func errIfDatabaseKeysDontMatch(r *http.Request, blogPost *PostData) error {
-	if strings.TrimPrefix(r.URL.Path, "/blog") != blogPost.DatabaseKey {
-		return errors.New("database key in the request URL does not match database key in the request body")
-	}
+func getDatabaseKeyFromURLPath(r *http.Request) string {
+	return strings.TrimPrefix(r.URL.Path, "/blog")
 }

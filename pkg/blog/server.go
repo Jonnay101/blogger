@@ -15,7 +15,7 @@ type Server interface {
 
 type database interface {
 	StoreBlogPost(*PostData) error
-	FindBlogPostByID(*RequestParams) (*PostData, error)
+	FindBlogPostByID(string) (*PostData, error)
 	FindAllBlogPosts(*RequestParams) ([]*PostData, error)
 	UpdateBlogPost(*PostData) error
 	RemoveBlogPost(*RequestParams) error

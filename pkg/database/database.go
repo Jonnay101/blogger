@@ -37,17 +37,17 @@ func (s *Session) StoreBlogPost(blogPost *blog.PostData) error {
 }
 
 // FindBlogPostByID - find a single blog post using the id
-func (s *Session) FindBlogPostByID(reqParams *blog.RequestParams) (*blog.PostData, error) {
+func (s *Session) FindBlogPostByID(id string) (*blog.PostData, error) {
 
 	blogPosts := s.getBlogCollection()
 	blogPost := &blog.PostData{}
 
-	q := blogPosts.FindId(reqParams.DatabaseKey)
+	q := blogPosts.FindId(id)
 	if err := q.One(&blogPost); err != nil {
 		if err == mgo.ErrNotFound {
-			return nil, glitch.ErrRecordNotFound
+			return blogPost, glitch.ErrRecordNotFound
 		}
-		return nil, err
+		return blogPost, err
 	}
 
 	return blogPost, nil
@@ -57,25 +57,25 @@ func (s *Session) FindBlogPostByID(reqParams *blog.RequestParams) (*blog.PostDat
 func (s *Session) FindAllBlogPosts(reqParams *blog.RequestParams) ([]*blog.PostData, error) {
 
 	blogPosts := s.getBlogCollection()
-	var matchingBlogPosts []*blog.PostData
+	matchingBlogPosts := []*blog.PostData{}
 
 	q := blogPosts.Find(reqParams.QueryMap)
 	if err := q.All(&matchingBlogPosts); err != nil {
 		if err == mgo.ErrNotFound {
-			return nil, glitch.ErrRecordNotFound
+			return matchingBlogPosts, glitch.ErrRecordNotFound
 		}
-		return nil, err
+		return matchingBlogPosts, err
 	}
 
 	return matchingBlogPosts, nil
 }
 
 // UpdateBlogPost - updates the post with the corresponding id
-func (s *Session) UpdateBlogPost(blogPost *PostData) error {
+func (s *Session) UpdateBlogPost(blogPost *blog.PostData) error {
 
 	blogPosts := s.getBlogCollection()
 
-	if err := blogPosts.UpdateId(blogPost.DatabaseKey); err != nil {
+	if err := blogPosts.UpdateId(blogPost.DatabaseKey, blogPost); err != nil {
 		if err == mgo.ErrNotFound {
 			return glitch.ErrRecordNotFound
 		}
