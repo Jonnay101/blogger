@@ -113,7 +113,7 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 			return
 		}
 
-		s.respond(w, r, "OK", http.StatusOK)
+		s.respond(w, r, blogPost, http.StatusOK)
 	}
 }
 
@@ -143,6 +143,15 @@ func (s *server) bindRequestBody(w http.ResponseWriter, r *http.Request) (*PostD
 		return nil, err
 	}
 
+	dynamicRoutes := mux.Vars(r)
+	if uuidStr, ok := dynamicRoutes["uuid"]; ok {
+		blogPost.UUID, err = uuid.Parse(uuidStr)
+		if err != nil {
+			return nil, err
+		}
+		blogPost.DatabaseKey = getDatabaseKeyFromURLPath(r)
+	}
+
 	return &blogPost, nil
 }
 
@@ -152,7 +161,7 @@ func (s *server) bindRequestParams(w http.ResponseWriter, r *http.Request) (*Req
 	var err error
 	routes := mux.Vars(r)
 
-	reqParams.DatabaseKey = strings.TrimPrefix(r.URL.Path, "/blog")
+	reqParams.DatabaseKey = getDatabaseKeyFromURLPath(r)
 
 	if uuidString, ok := routes["uuid"]; ok {
 		reqParams.UUID, err = uuid.Parse(uuidString)
@@ -192,7 +201,9 @@ func setQueryMap(reqParams *RequestParams) error {
 	reqParams.QueryMap = bson.M{}
 
 	if reqParams.UUID != uuid.Nil {
+		// when the uuid is passed in the url, only the _id needs to be queried
 		reqParams.QueryMap["_id"] = reqParams.DatabaseKey
+		return
 	}
 
 	if reqParams.Year != 0 {
@@ -312,8 +323,6 @@ func getRequestParamString(w http.ResponseWriter, r *http.Request, param string)
 	return str, nil
 }
 
-func errIfDatabaseKeysDontMatch(r *http.Request, blogPost *PostData) error {
-	if strings.TrimPrefix(r.URL.Path, "/blog") != blogPost.DatabaseKey {
-		return errors.New("database key in the request URL does not match database key in the request body")
-	}
+func getDatabaseKeyFromURLPath(r *http.Request) {
+	return strings.TrimPrefix(r.URL.Path, "/blog")
 }
