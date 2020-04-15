@@ -24,10 +24,7 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 			return
 		}
 
-		if err := s.setBlogPostFields(w, r, blogPost); err != nil {
-			s.respond(w, r, err, http.StatusBadRequest)
-			return
-		}
+		s.setBlogPostFields(w, r, blogPost)
 
 		if err := s.DB.StoreBlogPost(blogPost); err != nil {
 			if err == glitch.ErrItemAlreadyExists {
@@ -51,7 +48,6 @@ func (s *server) HandlerGetPost() http.HandlerFunc {
 			return
 		}
 
-		var statusCode int
 		blogPost, err := s.DB.FindBlogPostByID(reqParams)
 		if err != nil {
 			if err == glitch.ErrRecordNotFound {
@@ -75,7 +71,6 @@ func (s *server) HandlerGetAllPosts() http.HandlerFunc {
 			return
 		}
 
-		var statusCode int
 		blogPosts, err := s.DB.FindAllBlogPosts(reqParams)
 		if err != nil {
 			if err == glitch.ErrRecordNotFound {
@@ -99,11 +94,6 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 			return
 		}
 
-		if err = errIfDatabaseKeysDontMatch(); err != nil {
-			s.respond(w, r, err, http.StatusBadRequest)
-		}
-
-		var statusCode int
 		if err := s.DB.UpdateBlogPost(blogPost); err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err, http.StatusNotFound)
@@ -122,7 +112,6 @@ func (s *server) HandlerDeletePost() http.HandlerFunc {
 
 		var reqParams RequestParams
 
-		var statusCode int
 		if err := s.DB.RemoveBlogPost(&reqParams); err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err, http.StatusNotFound)
@@ -145,6 +134,7 @@ func (s *server) bindRequestBody(w http.ResponseWriter, r *http.Request) (*PostD
 
 	dynamicRoutes := mux.Vars(r)
 	if uuidStr, ok := dynamicRoutes["uuid"]; ok {
+		var err error
 		blogPost.UUID, err = uuid.Parse(uuidStr)
 		if err != nil {
 			return nil, err
@@ -203,7 +193,7 @@ func setQueryMap(reqParams *RequestParams) error {
 	if reqParams.UUID != uuid.Nil {
 		// when the uuid is passed in the url, only the _id needs to be queried
 		reqParams.QueryMap["_id"] = reqParams.DatabaseKey
-		return
+		return nil
 	}
 
 	if reqParams.Year != 0 {
@@ -323,6 +313,6 @@ func getRequestParamString(w http.ResponseWriter, r *http.Request, param string)
 	return str, nil
 }
 
-func getDatabaseKeyFromURLPath(r *http.Request) {
+func getDatabaseKeyFromURLPath(r *http.Request) string {
 	return strings.TrimPrefix(r.URL.Path, "/blog")
 }

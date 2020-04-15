@@ -71,11 +71,11 @@ func (s *Session) FindAllBlogPosts(reqParams *blog.RequestParams) ([]*blog.PostD
 }
 
 // UpdateBlogPost - updates the post with the corresponding id
-func (s *Session) UpdateBlogPost(blogPost *PostData) error {
+func (s *Session) UpdateBlogPost(blogPost *blog.PostData) error {
 
 	blogPosts := s.getBlogCollection()
 
-	if err := blogPosts.UpdateId(blogPost.DatabaseKey); err != nil {
+	if err := blogPosts.UpdateId(blogPost.DatabaseKey, blogPost); err != nil {
 		if err == mgo.ErrNotFound {
 			return glitch.ErrRecordNotFound
 		}
