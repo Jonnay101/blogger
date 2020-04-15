@@ -18,10 +18,15 @@ func NewDatabaseSession(mongoURL string) (*Session, error) {
 	return &Session{mgoSession}, err
 }
 
+func (s *Session) getBlogCollection() *mgo.Collection {
+
+	return s.DB("omfg").C("blog")
+}
+
 // StoreBlogPost - store a blog post in the blog collection
 func (s *Session) StoreBlogPost(blogPost *blog.PostData) error {
 
-	blogPosts := s.DB("omfg").C("blog")
+	blogPosts := s.getBlogCollection()
 
 	q := blogPosts.FindId(blogPost.DatabaseKey)
 	if n, _ := q.Count(); n > 0 {
@@ -34,7 +39,7 @@ func (s *Session) StoreBlogPost(blogPost *blog.PostData) error {
 // FindBlogPostByID - find a single blog post using the id
 func (s *Session) FindBlogPostByID(reqParams *blog.RequestParams) (*blog.PostData, error) {
 
-	blogPosts := s.DB("omfg").C("blog")
+	blogPosts := s.getBlogCollection()
 	blogPost := &blog.PostData{}
 
 	q := blogPosts.FindId(reqParams.DatabaseKey)
@@ -48,10 +53,10 @@ func (s *Session) FindBlogPostByID(reqParams *blog.RequestParams) (*blog.PostDat
 	return blogPost, nil
 }
 
-// FindAllBlogPosts -
+// FindAllBlogPosts - finds all posts that match the fields in the query map
 func (s *Session) FindAllBlogPosts(reqParams *blog.RequestParams) ([]*blog.PostData, error) {
 
-	blogPosts := s.DB("omfg").C("blog")
+	blogPosts := s.getBlogCollection()
 	var matchingBlogPosts []*blog.PostData
 
 	q := blogPosts.Find(reqParams.QueryMap)
@@ -63,4 +68,19 @@ func (s *Session) FindAllBlogPosts(reqParams *blog.RequestParams) ([]*blog.PostD
 	}
 
 	return matchingBlogPosts, nil
+}
+
+// RemoveBlogPost - removes the post matching the id
+func (s *Session) RemoveBlogPost(reqParams *blog.RequestParams) error {
+
+	blogPosts := s.getBlogCollection()
+
+	if err := blogPosts.RemoveId(reqParams.DatabaseKey); err != nil {
+		if err == mgo.ErrNotFound {
+			return glitch.ErrRecordNotFound
+		}
+		return err
+	}
+
+	return nil
 }

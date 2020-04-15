@@ -6,13 +6,14 @@ Site requirements
 - Blog
 - Database
 
+
 ## Descriptive Prefixes
 
 ### Database
 - Store
 - Find
 - Update
-- Delete
+- Remove
 
 ### Types
 - Set

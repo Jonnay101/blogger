@@ -17,6 +17,7 @@ type database interface {
 	StoreBlogPost(*PostData) error
 	FindBlogPostByID(*RequestParams) (*PostData, error)
 	FindAllBlogPosts(*RequestParams) ([]*PostData, error)
+	RemoveBlogPost(*RequestParams) error
 }
 
 type server struct {

@@ -22,6 +22,7 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 		s.setBlogPostFields(w, r, blogPost)
 		s.storeBlogPost(w, r, blogPost)
 		s.respond(w, r, blogPost, http.StatusOK)
+		// TODO: handle errors here
 
 		return
 	}
@@ -70,7 +71,27 @@ func (s *server) HandlerGetAllPosts() http.HandlerFunc {
 			s.respond(w, r, blogPosts, statusCode)
 			return
 		}
-		return
+
+		s.respond(w, r, blogPosts, http.StatusOK)
+	}
+}
+
+func (s *server) HandlerDeletePost() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		var reqParams RequestParams
+
+		var statusCode int
+		if err := s.DB.RemoveBlogPost(&reqParams); err != nil {
+			if err == glitch.ErrRecordNotFound {
+				statusCode = http.StatusNotFound
+			}
+			statusCode = http.StatusInternalServerError
+			s.respond(w, r, err, statusCode)
+			return
+		}
+
+		s.respond(w, r, "OK", http.StatusOK)
 	}
 }
 
