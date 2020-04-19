@@ -11,5 +11,8 @@ services:
     image: "mongo:3.6"
     ports:
       - "29000:27017"
-  volumes:
-    - ./tmp/db:/data/db
+    volumes:
+      - data-volume:/data/db
+
+volumes:
+  data-volume:

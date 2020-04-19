@@ -10,7 +10,7 @@ func getCurrentUTCTime() time.Time {
 	return time.Now().UTC().Truncate(time.Second)
 }
 
-func ifNewBlogPostFieldValueIsZeroUseOldBlogPostFieldValue(oldBlogPost, newBlogPost *PostData) {
+func replaceZeroValueFieldsWithOldData(oldBlogPost, newBlogPost *PostData) {
 
 	// compare the 2 objects and decipher which fields need replacing
 	if newBlogPost.UUID == uuid.Nil {
