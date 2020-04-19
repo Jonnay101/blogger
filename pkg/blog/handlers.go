@@ -47,7 +47,7 @@ func (s *server) HandlerGetPost() http.HandlerFunc {
 			return
 		}
 
-		blogPost, err := s.DB.FindBlogPostByID(reqParams.DatabaseKey)
+		blogPost, err := s.DB.FindBlogPostByKey(reqParams)
 		if err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err, http.StatusNotFound)
@@ -87,13 +87,13 @@ func (s *server) HandlerGetAllPosts() http.HandlerFunc {
 func (s *server) HandlerUpdatePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		newBlogPost, err := s.bindRequestBody(w, r)
+		reqParams, err := s.bindRequestParams(w, r)
 		if err != nil {
 			s.respond(w, r, err, http.StatusBadRequest)
 			return
 		}
 
-		oldBlogPost, err := s.DB.FindBlogPostByID(newBlogPost.DatabaseKey)
+		oldBlogPost, err := s.DB.FindBlogPostByKey(reqParams)
 		if err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err, http.StatusNotFound)
@@ -102,7 +102,13 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 			s.respond(w, r, err, http.StatusInternalServerError)
 		}
 
-		ifNewBlogPostFieldValueIsZeroUseOldBlogPostFieldValue(oldBlogPost, newBlogPost)
+		newBlogPost, err := s.bindRequestBody(w, r)
+		if err != nil {
+			s.respond(w, r, err, http.StatusBadRequest)
+			return
+		}
+
+		replaceZeroValueFieldsWithOldData(oldBlogPost, newBlogPost)
 
 		if err := s.DB.UpdateBlogPost(newBlogPost); err != nil {
 			if err == glitch.ErrRecordNotFound {
@@ -144,14 +150,18 @@ func (s *server) bindRequestBody(w http.ResponseWriter, r *http.Request) (*PostD
 
 	dynamicRoutes := mux.Vars(r)
 
-	if uuidStr, ok := dynamicRoutes["uuid"]; ok {
-		var err error
-		blogPost.UUID, err = uuid.Parse(uuidStr)
-		if err != nil {
-			return nil, err
-		}
-		blogPost.DatabaseKey = getDatabaseKeyFromURLPath(r)
+	var err error
+	blogPost.UUID, err = uuid.Parse(dynamicRoutes["uuid"])
+	if err != nil {
+		return nil, err
 	}
+
+	blogPost.UserUUID, err = uuid.Parse(dynamicRoutes["user_uuid"])
+	if err != nil {
+		return nil, err
+	}
+
+	blogPost.DatabaseKey = getDatabaseKeyFromURLPath(r)
 
 	return &blogPost, nil
 }
@@ -160,15 +170,18 @@ func (s *server) bindRequestParams(w http.ResponseWriter, r *http.Request) (*Req
 
 	var reqParams RequestParams
 	var err error
-	routes := mux.Vars(r)
+	dynamicRoutes := mux.Vars(r)
 
 	reqParams.DatabaseKey = getDatabaseKeyFromURLPath(r)
 
-	if uuidString, ok := routes["uuid"]; ok {
-		reqParams.UUID, err = uuid.Parse(uuidString)
-		if err != nil {
-			return nil, err
-		}
+	reqParams.UUID, err = uuid.Parse(dynamicRoutes["uuid"])
+	if err != nil {
+		return nil, err
+	}
+
+	reqParams.UserUUID, err = uuid.Parse(dynamicRoutes["user_uuid"])
+	if err != nil {
+		return nil, err
 	}
 
 	reqParams.Year, err = getRequestParamInt(w, r, "year")
@@ -191,45 +204,45 @@ func (s *server) bindRequestParams(w http.ResponseWriter, r *http.Request) (*Req
 	reqParams.Title = queries.Get("title")
 	reqParams.Category = queries.Get("category")
 
-	if err := setQueryMap(&reqParams); err != nil {
+	if err := setQueryConfig(&reqParams); err != nil {
 		return nil, err
 	}
 
 	return &reqParams, nil
 }
 
-func setQueryMap(reqParams *RequestParams) error {
+func setQueryConfig(reqParams *RequestParams) error {
 
-	reqParams.QueryMap = bson.M{}
+	reqParams.QueryConfig = bson.M{}
 
 	if reqParams.UUID != uuid.Nil {
 		// when the uuid is passed in the url, only the _id needs to be queried
-		reqParams.QueryMap["_id"] = reqParams.DatabaseKey
+		reqParams.QueryConfig["_id"] = reqParams.DatabaseKey
 		return nil
 	}
 
 	if reqParams.Year != 0 {
-		reqParams.QueryMap["year"] = reqParams.Year
+		reqParams.QueryConfig["year"] = reqParams.Year
 	}
 
 	if reqParams.Month != "" {
-		reqParams.QueryMap["month"] = reqParams.Month
+		reqParams.QueryConfig["month"] = reqParams.Month
 	}
 
 	if reqParams.Day != 0 {
-		reqParams.QueryMap["day"] = reqParams.Day
+		reqParams.QueryConfig["day"] = reqParams.Day
 	}
 
 	if reqParams.Title != "" {
-		reqParams.QueryMap["title"] = reqParams.Title
+		reqParams.QueryConfig["title"] = reqParams.Title
 	}
 
 	if reqParams.Author != "" {
-		reqParams.QueryMap["author"] = reqParams.Author
+		reqParams.QueryConfig["author"] = reqParams.Author
 	}
 
 	if reqParams.Category != "" {
-		reqParams.QueryMap["category"] = reqParams.Category
+		reqParams.QueryConfig["category"] = reqParams.Category
 	}
 
 	return nil
@@ -279,7 +292,7 @@ func (s *server) storeBlogPost(w http.ResponseWriter, r *http.Request, blogPost 
 
 func (s *server) findBlogPost(w http.ResponseWriter, r *http.Request, reqParams *RequestParams) (*PostData, error) {
 
-	blogPost, err := s.DB.FindBlogPostByID(reqParams.DatabaseKey)
+	blogPost, err := s.DB.FindBlogPostByKey(reqParams)
 	if err != nil {
 		return nil, err
 	}

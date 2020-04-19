@@ -11,6 +11,7 @@ import (
 type PostData struct {
 	DatabaseKey string    `json:"_id" bson:"_id"`
 	UUID        uuid.UUID `json:"uuid" bson:"uuid"`
+	UserUUID    uuid.UUID `json:"user_uuid" bson:"user_uuid"`
 	Author      string    `json:"author"`
 	Title       string    `json:"title"`
 	Content     string    `json:"content"`
@@ -27,6 +28,7 @@ type PostData struct {
 // RequestParams -
 type RequestParams struct {
 	UUID        uuid.UUID `json:"uuid" bson:"uuid"`
+	UserUUID    uuid.UUID `json:"user_uuid" bson:"user_uuid"`
 	DatabaseKey string    `json:"_id"`
 	Title       string    `json:"title"`
 	Author      string    `json:"author"`
@@ -34,5 +36,5 @@ type RequestParams struct {
 	Year        int       `json:"year"`
 	Month       string    `json:"month"`
 	Day         int       `json:"day"`
-	QueryMap    bson.M    `json:"-"`
+	QueryConfig bson.M    `json:"-"`
 }
