@@ -298,28 +298,6 @@ func (*server) createDatabaseKey(blogPost *PostData) error {
 	return nil
 }
 
-func (s *server) storeBlogPost(w http.ResponseWriter, r *http.Request, blogPost *PostData) {
-
-	if err := s.DB.StoreBlogPost(blogPost); err != nil {
-		if err == glitch.ErrItemAlreadyExists {
-			s.respond(w, r, err.Error(), http.StatusConflict)
-			return
-		}
-		s.respond(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (s *server) findBlogPost(w http.ResponseWriter, r *http.Request, reqParams *RequestParams) (*PostData, error) {
-
-	blogPost, err := s.DB.FindBlogPostByKey(reqParams)
-	if err != nil {
-		return nil, err
-	}
-
-	return blogPost, nil
-}
-
 func getRequestParamInt(w http.ResponseWriter, r *http.Request, param string) (int, error) {
 
 	var num int
