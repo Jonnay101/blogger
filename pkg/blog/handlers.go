@@ -101,24 +101,13 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 			return
 		}
 
-		oldBlogPost, err := s.DB.FindBlogPostByKey(reqParams)
-		if err != nil {
-			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err.Error(), http.StatusNotFound)
-				return
-			}
-			s.respond(w, r, err.Error(), http.StatusInternalServerError)
-		}
+		updateConfig := make(bson.M)
 
-		newBlogPost, err := s.bindRequestBody(w, r)
-		if err != nil {
+		if err = s.decodeRequestBody(w, r, &updateConfig); err != nil {
 			s.respond(w, r, err.Error(), http.StatusBadRequest)
-			return
 		}
 
-		replaceZeroValueFieldsWithOldData(oldBlogPost, newBlogPost)
-
-		if err := s.DB.UpdateBlogPost(newBlogPost); err != nil {
+		if err := s.DB.UpdateBlogPost(reqParams, &updateConfig); err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err.Error(), http.StatusNotFound)
 				return
@@ -127,7 +116,7 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 			return
 		}
 
-		s.respond(w, r, newBlogPost, http.StatusOK)
+		s.respond(w, r, "OK", http.StatusOK)
 	}
 }
 

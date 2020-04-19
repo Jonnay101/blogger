@@ -5,6 +5,8 @@ import (
 	"github.com/Jonnay101/icon/pkg/glitch"
 	"github.com/globalsign/mgo"
 	"github.com/music-tribe/uuid"
+
+	"gopkg.in/mgo.v2/bson"
 )
 
 // Session -
@@ -75,11 +77,11 @@ func (s *Session) FindAllBlogPosts(reqParams *blog.RequestParams) ([]*blog.PostD
 }
 
 // UpdateBlogPost - updates the post with the corresponding id
-func (s *Session) UpdateBlogPost(blogPost *blog.PostData) error {
+func (s *Session) UpdateBlogPost(reqParams *blog.RequestParams, updateConfig *bson.M) error {
 
-	blogPosts := s.getUsersBlogCollection(blogPost.UserUUID)
+	blogPosts := s.getUsersBlogCollection(reqParams.UserUUID)
 
-	if err := blogPosts.UpdateId(blogPost.DatabaseKey, blogPost); err != nil {
+	if err := blogPosts.UpdateId(reqParams.DatabaseKey, bson.M{"$set": updateConfig}); err != nil {
 		if err == mgo.ErrNotFound {
 			return glitch.ErrRecordNotFound
 		}

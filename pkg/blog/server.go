@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // Server -
@@ -17,7 +18,8 @@ type database interface {
 	StoreBlogPost(*PostData) error
 	FindBlogPostByKey(*RequestParams) (*PostData, error)
 	FindAllBlogPosts(*RequestParams) ([]*PostData, error)
-	UpdateBlogPost(*PostData) error
+	UpdateBlogPost(*RequestParams, *bson.M) error
+	// UpdateBlogPost(*PostData) error
 	RemoveBlogPost(*RequestParams) error
 }
 
