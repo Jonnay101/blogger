@@ -1,8 +1,11 @@
 package blog
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -101,13 +104,13 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 			return
 		}
 
-		updateConfig := make(bson.M)
-
-		if err = s.decodeRequestBody(w, r, &updateConfig); err != nil {
+		updateConfig, err := s.bindRequestBodyToUpdateConfig(w, r)
+		if err != nil {
 			s.respond(w, r, err.Error(), http.StatusBadRequest)
+			return
 		}
 
-		if err := s.DB.UpdateBlogPost(reqParams, &updateConfig); err != nil {
+		if err := s.DB.UpdateBlogPost(reqParams, updateConfig); err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err.Error(), http.StatusNotFound)
 				return
@@ -356,4 +359,65 @@ func (s *server) validateBlogPost(blogPost *PostData) error {
 	}
 
 	return nil
+}
+
+func validateUpdateConfig(updateConfig bson.M) error {
+	for key := range updateConfig {
+		switch key {
+		case "author":
+			continue
+		case "title":
+			continue
+		case "category":
+			continue
+		case "contents":
+			continue
+		case "metadata":
+			continue
+		case "images":
+			continue
+		default:
+			return fmt.Errorf("updating %s value is prohibited", key)
+		}
+	}
+	return nil
+}
+
+func (*server) bindRequestBodyToUpdateConfig(w http.ResponseWriter, r *http.Request) (*bson.M, error) {
+
+	byt, err := bindRequestBodyAsBytes(r)
+	if err != nil {
+		return nil, err
+	}
+
+	buffer := bytes.NewBuffer([]byte{})
+	if err := json.NewEncoder(buffer).Encode(&byt); err != nil {
+		return nil, err
+	}
+
+	decoder := json.NewDecoder(buffer)
+
+	// decode to the struct first to check the provided types are correct
+	blogPost := PostData{}
+	if err := decoder.Decode(&blogPost); err != nil {
+		return nil, err
+	}
+
+	updateConfig := make(bson.M)
+	if err := decoder.Decode(&updateConfig); err != nil {
+		return nil, err
+	}
+
+	err = validateUpdateConfig(updateConfig)
+
+	return &updateConfig, err
+}
+
+func bindRequestBodyAsBytes(r *http.Request) ([]byte, error) {
+	byt, err := ioutil.ReadAll(r.Body)
+	if r.Body != nil {
+		r.Body.Close()
+	}
+
+	return byt, err
 }
