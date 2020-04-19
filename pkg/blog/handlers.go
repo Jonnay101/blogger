@@ -23,7 +23,10 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 			return
 		}
 
-		s.setBlogPostFields(w, r, blogPost)
+		if err = s.initBlogPostData(w, r, blogPost); err != nil {
+			s.respond(w, r, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		if err := s.DB.StoreBlogPost(blogPost); err != nil {
 			if err == glitch.ErrItemAlreadyExists {
@@ -126,9 +129,13 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 func (s *server) HandlerDeletePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var reqParams RequestParams
+		reqParams, err := s.bindRequestParams(w, r)
+		if err != nil {
+			s.respond(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-		if err := s.DB.RemoveBlogPost(&reqParams); err != nil {
+		if err := s.DB.RemoveBlogPost(reqParams); err != nil {
 			if err == glitch.ErrRecordNotFound {
 				s.respond(w, r, err.Error(), http.StatusNotFound)
 				return
@@ -252,34 +259,43 @@ func setQueryConfig(reqParams *RequestParams) error {
 	return nil
 }
 
-func (s *server) setBlogPostFields(w http.ResponseWriter, r *http.Request, blogPost *PostData) {
+func (s *server) initBlogPostData(w http.ResponseWriter, r *http.Request, blogPost *PostData) error {
 
 	blogPost.UUID = uuid.New()
 
+	s.setDateCreatedAt(blogPost)
+
+	err := s.createDatabaseKey(blogPost)
+
+	return err
+}
+
+func (*server) setDateCreatedAt(blogPost *PostData) {
+
 	currentTime := getCurrentUTCTime()
+
 	blogPost.CreatedAt = currentTime
 	blogPost.UpdatedAt = currentTime
 	blogPost.Year = currentTime.Year()
 	blogPost.Month = currentTime.Month().String()
 	blogPost.Day = currentTime.Day()
-
-	blogPost.DatabaseKey = s.createDatabaseKey(w, r, blogPost)
 }
 
-func (s *server) createDatabaseKey(w http.ResponseWriter, r *http.Request, pd *PostData) string {
+func (*server) createDatabaseKey(blogPost *PostData) error {
 
-	if pd.CreatedAt.IsZero() {
-		s.respond(w, r, errors.New("PostData CreatedAt field not set"), http.StatusBadRequest)
-		return ""
+	if blogPost.CreatedAt.IsZero() {
+		return errors.New("PostData CreatedAt field not set")
 	}
 
-	return fmt.Sprintf(
+	blogPost.DatabaseKey = fmt.Sprintf(
 		"/%d/%s/%d/%s",
-		pd.Year,
-		pd.Month,
-		pd.Day,
-		pd.UUID.String(),
+		blogPost.Year,
+		blogPost.Month,
+		blogPost.Day,
+		blogPost.UUID.String(),
 	)
+
+	return nil
 }
 
 func (s *server) storeBlogPost(w http.ResponseWriter, r *http.Request, blogPost *PostData) {
