@@ -151,18 +151,18 @@ func (s *server) bindRequestBody(w http.ResponseWriter, r *http.Request) (*PostD
 	dynamicRoutes := mux.Vars(r)
 	var err error
 
+	blogPost.UserUUID, err = uuid.Parse(dynamicRoutes["user_uuid"])
+	if err != nil {
+		return nil, err
+	}
+
 	if blogUUID, ok := dynamicRoutes["uuid"]; ok {
 		blogPost.UUID, err = uuid.Parse(blogUUID)
 		if err != nil {
 			return nil, err
 		}
 
-		blogPost.DatabaseKey = getDatabaseKeyFromURLPath(r)
-	}
-
-	blogPost.UserUUID, err = uuid.Parse(dynamicRoutes["user_uuid"])
-	if err != nil {
-		return nil, err
+		blogPost.DatabaseKey = getDatabaseKeyFromURLPath(r, blogPost.UserUUID)
 	}
 
 	return &blogPost, nil
@@ -174,17 +174,19 @@ func (s *server) bindRequestParams(w http.ResponseWriter, r *http.Request) (*Req
 	var err error
 	dynamicRoutes := mux.Vars(r)
 
-	reqParams.DatabaseKey = getDatabaseKeyFromURLPath(r)
-
-	reqParams.UUID, err = uuid.Parse(dynamicRoutes["uuid"])
-	if err != nil {
-		return nil, err
+	if uuidStr, ok := dynamicRoutes["uuid"]; ok {
+		reqParams.UUID, err = uuid.Parse(uuidStr)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	reqParams.UserUUID, err = uuid.Parse(dynamicRoutes["user_uuid"])
 	if err != nil {
 		return nil, err
 	}
+
+	reqParams.DatabaseKey = getDatabaseKeyFromURLPath(r, reqParams.UserUUID)
 
 	reqParams.Year, err = getRequestParamInt(w, r, "year")
 	if err != nil {
@@ -343,6 +345,6 @@ func getRequestParamString(w http.ResponseWriter, r *http.Request, param string)
 	return str, nil
 }
 
-func getDatabaseKeyFromURLPath(r *http.Request) string {
-	return strings.TrimPrefix(r.URL.Path, "/blog")
+func getDatabaseKeyFromURLPath(r *http.Request, blogUserUUID uuid.UUID) string {
+	return strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/blog/%s", blogUserUUID.String()))
 }
