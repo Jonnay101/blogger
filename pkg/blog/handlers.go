@@ -19,7 +19,7 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 
 		blogPost, err := s.bindRequestBody(w, r)
 		if err != nil {
-			s.respond(w, r, err, http.StatusBadRequest)
+			s.respond(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -27,10 +27,10 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 
 		if err := s.DB.StoreBlogPost(blogPost); err != nil {
 			if err == glitch.ErrItemAlreadyExists {
-				s.respond(w, r, err, http.StatusConflict)
+				s.respond(w, r, err.Error(), http.StatusConflict)
 				return
 			}
-			s.respond(w, r, err, http.StatusInternalServerError)
+			s.respond(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -43,17 +43,17 @@ func (s *server) HandlerGetPost() http.HandlerFunc {
 
 		reqParams, err := s.bindRequestParams(w, r)
 		if err != nil {
-			s.respond(w, r, err, http.StatusBadRequest)
+			s.respond(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		blogPost, err := s.DB.FindBlogPostByKey(reqParams)
 		if err != nil {
 			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err, http.StatusNotFound)
+				s.respond(w, r, err.Error(), http.StatusNotFound)
 				return
 			}
-			s.respond(w, r, err, http.StatusInternalServerError)
+			s.respond(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -66,17 +66,17 @@ func (s *server) HandlerGetAllPosts() http.HandlerFunc {
 
 		reqParams, err := s.bindRequestParams(w, r)
 		if err != nil {
-			s.respond(w, r, err, http.StatusBadRequest)
+			s.respond(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		blogPosts, err := s.DB.FindAllBlogPosts(reqParams)
 		if err != nil {
 			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err, http.StatusNotFound)
+				s.respond(w, r, err.Error(), http.StatusNotFound)
 				return
 			}
-			s.respond(w, r, err, http.StatusInternalServerError)
+			s.respond(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -89,22 +89,22 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 
 		reqParams, err := s.bindRequestParams(w, r)
 		if err != nil {
-			s.respond(w, r, err, http.StatusBadRequest)
+			s.respond(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		oldBlogPost, err := s.DB.FindBlogPostByKey(reqParams)
 		if err != nil {
 			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err, http.StatusNotFound)
+				s.respond(w, r, err.Error(), http.StatusNotFound)
 				return
 			}
-			s.respond(w, r, err, http.StatusInternalServerError)
+			s.respond(w, r, err.Error(), http.StatusInternalServerError)
 		}
 
 		newBlogPost, err := s.bindRequestBody(w, r)
 		if err != nil {
-			s.respond(w, r, err, http.StatusBadRequest)
+			s.respond(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -112,10 +112,10 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 
 		if err := s.DB.UpdateBlogPost(newBlogPost); err != nil {
 			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err, http.StatusNotFound)
+				s.respond(w, r, err.Error(), http.StatusNotFound)
 				return
 			}
-			s.respond(w, r, err, http.StatusInternalServerError)
+			s.respond(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -130,10 +130,10 @@ func (s *server) HandlerDeletePost() http.HandlerFunc {
 
 		if err := s.DB.RemoveBlogPost(&reqParams); err != nil {
 			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err, http.StatusNotFound)
+				s.respond(w, r, err.Error(), http.StatusNotFound)
 				return
 			}
-			s.respond(w, r, err, http.StatusInternalServerError)
+			s.respond(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -149,19 +149,21 @@ func (s *server) bindRequestBody(w http.ResponseWriter, r *http.Request) (*PostD
 	}
 
 	dynamicRoutes := mux.Vars(r)
-
 	var err error
-	blogPost.UUID, err = uuid.Parse(dynamicRoutes["uuid"])
-	if err != nil {
-		return nil, err
+
+	if blogUUID, ok := dynamicRoutes["uuid"]; ok {
+		blogPost.UUID, err = uuid.Parse(blogUUID)
+		if err != nil {
+			return nil, err
+		}
+
+		blogPost.DatabaseKey = getDatabaseKeyFromURLPath(r)
 	}
 
 	blogPost.UserUUID, err = uuid.Parse(dynamicRoutes["user_uuid"])
 	if err != nil {
 		return nil, err
 	}
-
-	blogPost.DatabaseKey = getDatabaseKeyFromURLPath(r)
 
 	return &blogPost, nil
 }
@@ -282,10 +284,10 @@ func (s *server) storeBlogPost(w http.ResponseWriter, r *http.Request, blogPost 
 
 	if err := s.DB.StoreBlogPost(blogPost); err != nil {
 		if err == glitch.ErrItemAlreadyExists {
-			s.respond(w, r, err, http.StatusConflict)
+			s.respond(w, r, err.Error(), http.StatusConflict)
 			return
 		}
-		s.respond(w, r, err, http.StatusInternalServerError)
+		s.respond(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
