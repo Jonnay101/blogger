@@ -23,7 +23,7 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 			return
 		}
 
-		if err = s.validateBlogPost(blogPost); err != nil {
+		if err = s.validateBlogPostRequest(blogPost); err != nil {
 			s.respond(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -348,7 +348,7 @@ func getDatabaseKeyFromURLPath(r *http.Request, blogUserUUID uuid.UUID) string {
 	return strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/blog/%s", blogUserUUID.String()))
 }
 
-func (s *server) validateBlogPost(blogPost *PostData) error {
+func (s *server) validateBlogPostRequest(blogPost *PostData) error {
 
 	if (blogPost.Author) == "" {
 		return errors.New("blog post 'author' field must not be empty")
