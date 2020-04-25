@@ -116,7 +116,7 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 			return
 		}
 
-		replaceZeroValueFieldsWithOldData(oldBlogPost, newBlogPost)
+		populateZeroValueFieldsWithOldData(oldBlogPost, newBlogPost)
 
 		if err := s.DB.UpdateBlogPost(newBlogPost); err != nil {
 			if err == glitch.ErrRecordNotFound {
@@ -367,4 +367,42 @@ func (s *server) validateBlogPostRequest(blogPost *PostData) error {
 	}
 
 	return nil
+}
+
+func populateZeroValueFieldsWithOldData(oldBlogPost, newBlogPost *PostData) {
+
+	// compare the 2 objects and decipher which fields need replacing
+	if newBlogPost.UUID == uuid.Nil {
+		newBlogPost.UUID = oldBlogPost.UUID
+	}
+
+	if newBlogPost.Author == "" {
+		newBlogPost.Author = oldBlogPost.Author
+	}
+
+	if newBlogPost.Title == "" {
+		newBlogPost.Title = oldBlogPost.Title
+	}
+
+	if newBlogPost.Content == "" {
+		newBlogPost.Content = oldBlogPost.Content
+	}
+
+	if newBlogPost.Category == "" {
+		newBlogPost.Category = oldBlogPost.Category
+	}
+
+	if newBlogPost.Metadata == nil {
+		newBlogPost.Metadata = oldBlogPost.Metadata
+	}
+
+	if newBlogPost.Images == nil {
+		newBlogPost.Images = oldBlogPost.Images
+	}
+
+	newBlogPost.CreatedAt = oldBlogPost.CreatedAt
+	newBlogPost.Year = oldBlogPost.Year
+	newBlogPost.Month = oldBlogPost.Month
+	newBlogPost.Day = oldBlogPost.Day
+	newBlogPost.UpdatedAt = getCurrentUTCTime()
 }
