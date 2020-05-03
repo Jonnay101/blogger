@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/Jonnay101/icon/pkg/blog"
+	"github.com/Jonnay101/icon/pkg/comments"
 	"github.com/Jonnay101/icon/pkg/database"
 	"github.com/Jonnay101/icon/pkg/handlers"
 	"github.com/labstack/gommon/log"
@@ -31,11 +32,13 @@ func Run() error {
 		return err
 	}
 
-	blog := blog.NewService(database)
+	blogService := blog.NewService(database)
 
-	iconHandlers := handlers.NewHandlers(blog)
+	commentsService := comments.NewService(database)
 
-	server := NewServer(getEnvOrDefault("PORT", "8080"), *iconHandlers)
+	iconHandlers := handlers.NewHandlers(blogService, commentsService)
+
+	server := NewServer(getEnvOrDefault("PORT", "8080"), iconHandlers)
 
 	log.Fatal(server.ListenAndServe())
 

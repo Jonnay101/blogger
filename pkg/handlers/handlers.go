@@ -5,17 +5,20 @@ import (
 	"net/http"
 
 	"github.com/Jonnay101/icon/pkg/blog"
+	"github.com/Jonnay101/icon/pkg/comments"
 )
 
 // Handlers -
 type Handlers struct {
-	Blog *blog.Service
+	Blog     *blog.Service
+	Comments *comments.Service
 }
 
 // NewHandlers -
-func NewHandlers(blogService *blog.Service) *Handlers {
+func NewHandlers(blogService *blog.Service, commentsService *comments.Service) *Handlers {
 	return &Handlers{
-		blogService,
+		Blog:     blogService,
+		Comments: commentsService,
 	}
 }
 
