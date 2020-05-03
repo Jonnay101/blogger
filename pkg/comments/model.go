@@ -19,5 +19,4 @@ type RequestParams {
 	UserUUID     uuid.UUID `json:"user_uuid"`
 	UserName     string    `json:"user_name"`
 	Content      string    `json:"content"`
-	Likes        string    `json:"likes"`
 }
