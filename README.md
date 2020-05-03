@@ -1,4 +1,4 @@
-# blogger
+# icon blog
 Golang backend for a dynamic website with blog
 
 Site requirements
