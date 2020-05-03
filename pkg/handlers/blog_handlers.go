@@ -13,6 +13,7 @@ func (h *Handlers) HandlerBlogCreatePost() http.HandlerFunc {
 		blogPost, err := h.Blog.BindRequestBody(w, r)
 		if err != nil {
 			h.respond(w, r, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		if err := h.Blog.DB.StoreBlogPost(blogPost); err != nil {
