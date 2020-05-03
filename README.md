@@ -5,6 +5,8 @@ Site requirements
 - Authorization
 - Blog
 - Database
+- Comments
+- Tags
 
 
 ## Descriptive Prefixes
