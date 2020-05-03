@@ -12,8 +12,9 @@ type Data struct {
 	Likes        string    `json:"likes"`
 }
 
-type RequestParams {
-	BlogUUID uuid.UUID `json:"blog_uuid"`
+// RequestParams -
+type RequestParams struct {
+	BlogUUID     uuid.UUID `json:"blog_uuid"`
 	BlogPostUUID uuid.UUID `json:"blog_post_uuid"`
 	ParentUUID   uuid.UUID `json:"parent_uuid"`
 	UserUUID     uuid.UUID `json:"user_uuid"`
