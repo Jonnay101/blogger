@@ -35,7 +35,7 @@ func Run() error {
 
 	iconHandlers := handlers.NewHandlers(blog)
 
-	server := NewServer(getEnvOrDefault("PORT", "8080"), *iconHandlers)
+	server := NewServer(getEnvOrDefault("PORT", "8080"), iconHandlers)
 
 	log.Fatal(server.ListenAndServe())
 

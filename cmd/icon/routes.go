@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (srv *serverHandler) SetRoutes(iconHandlers handlers.Handlers) {
+func (srv *serverHandler) SetRoutes(iconHandlers *handlers.Handlers) {
 	srv.Router = mux.NewRouter()
 
 	// handle creating new post

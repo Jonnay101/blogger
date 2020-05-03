@@ -14,7 +14,7 @@ type serverHandler struct {
 }
 
 // NewServer -
-func NewServer(port string, iconHandlers handlers.Handlers) *http.Server {
+func NewServer(port string, iconHandlers *handlers.Handlers) *http.Server {
 
 	server := serverHandler{}
 
