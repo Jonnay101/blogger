@@ -19,15 +19,6 @@ func NewHandlers(blogService *blog.Service) *Handlers {
 	}
 }
 
-func (h *Handlers) decodeRequestBody(w http.ResponseWriter, r *http.Request, bindObject interface{}) error {
-
-	if r.Body != nil {
-		defer r.Body.Close()
-	}
-
-	return json.NewDecoder(r.Body).Decode(&bindObject)
-}
-
 func (h *Handlers) respond(w http.ResponseWriter, r *http.Request, responseData interface{}, statusCode int) {
 
 	w.WriteHeader(statusCode)
