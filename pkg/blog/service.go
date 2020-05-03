@@ -8,6 +8,7 @@ type database interface {
 	RemoveBlogPost(*RequestParams) error
 }
 
+// Service holds the data and methods related to the Blog Service
 type Service struct {
 	DB database
 }
