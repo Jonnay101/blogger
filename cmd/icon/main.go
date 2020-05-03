@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/Jonnay101/icon/pkg/blog"
 	"github.com/Jonnay101/icon/pkg/database"
+	"github.com/Jonnay101/icon/pkg/handlers"
 	"github.com/labstack/gommon/log"
 )
 
@@ -32,23 +31,15 @@ func Run() error {
 		return err
 	}
 
-	blog := blog.NewServer()
-	blog.SetDatabase(database)
+	blog := blog.NewService(database)
 
-	srv := configureServer(getEnvOrDefault("PORT", "8080"), blog)
-	log.Fatal(srv.ListenAndServe())
+	iconHandlers := handlers.NewHandlers(blog)
+
+	server := NewServer(getEnvOrDefault("PORT", "8080"), *iconHandlers)
+
+	log.Fatal(server.ListenAndServe())
 
 	return nil
-}
-
-func configureServer(port string, handler http.Handler) http.Server {
-
-	return http.Server{
-		Addr:         fmt.Sprintf(":%s", port),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		Handler:      handler,
-	}
 }
 
 func getEnvOrDefault(envVar, def string) string {

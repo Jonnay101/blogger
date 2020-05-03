@@ -1,162 +1,24 @@
 package blog
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/Jonnay101/icon/pkg/glitch"
+	"github.com/Jonnay101/icon/pkg/help"
 	"github.com/gorilla/mux"
 	"github.com/music-tribe/uuid"
 	"gopkg.in/mgo.v2/bson"
 )
 
-// HandlerCreatePost stores a newly created blog post
-func (s *server) HandlerCreatePost() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		blogPost, err := s.bindRequestBody(w, r)
-		if err != nil {
-			s.respond(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if err = s.validateBlogPostRequest(blogPost); err != nil {
-			s.respond(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if err = s.initBlogPostData(w, r, blogPost); err != nil {
-			s.respond(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if err := s.DB.StoreBlogPost(blogPost); err != nil {
-			if err == glitch.ErrItemAlreadyExists {
-				s.respond(w, r, err.Error(), http.StatusConflict)
-				return
-			}
-			s.respond(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		s.respond(w, r, blogPost, http.StatusOK)
-	}
-}
-
-func (s *server) HandlerGetPost() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		reqParams, err := s.bindRequestParams(w, r)
-		if err != nil {
-			s.respond(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		blogPost, err := s.DB.FindBlogPostByKey(reqParams)
-		if err != nil {
-			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err.Error(), http.StatusNotFound)
-				return
-			}
-			s.respond(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		s.respond(w, r, blogPost, http.StatusOK)
-	}
-}
-
-func (s *server) HandlerGetAllPosts() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		reqParams, err := s.bindRequestParams(w, r)
-		if err != nil {
-			s.respond(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		blogPosts, err := s.DB.FindAllBlogPosts(reqParams)
-		if err != nil {
-			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err.Error(), http.StatusNotFound)
-				return
-			}
-			s.respond(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		s.respond(w, r, blogPosts, http.StatusOK)
-	}
-}
-
-func (s *server) HandlerUpdatePost() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		reqParams, err := s.bindRequestParams(w, r)
-		if err != nil {
-			s.respond(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		oldBlogPost, err := s.DB.FindBlogPostByKey(reqParams)
-		if err != nil {
-			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err.Error(), http.StatusNotFound)
-				return
-			}
-			s.respond(w, r, err.Error(), http.StatusInternalServerError)
-		}
-
-		newBlogPost, err := s.bindRequestBody(w, r)
-		if err != nil {
-			s.respond(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		populateZeroValueFieldsWithOldData(oldBlogPost, newBlogPost)
-
-		if err := s.DB.UpdateBlogPost(newBlogPost); err != nil {
-			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err.Error(), http.StatusNotFound)
-				return
-			}
-			s.respond(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		s.respond(w, r, newBlogPost, http.StatusOK)
-	}
-}
-
-func (s *server) HandlerDeletePost() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		reqParams, err := s.bindRequestParams(w, r)
-		if err != nil {
-			s.respond(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if err := s.DB.RemoveBlogPost(reqParams); err != nil {
-			if err == glitch.ErrRecordNotFound {
-				s.respond(w, r, err.Error(), http.StatusNotFound)
-				return
-			}
-			s.respond(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		s.respond(w, r, "OK", http.StatusOK)
-	}
-}
-
-func (s *server) bindRequestBody(w http.ResponseWriter, r *http.Request) (*PostData, error) {
+// BindRequestBody binds the request body to a blog.PostData struct
+func (s *Service) BindRequestBody(w http.ResponseWriter, r *http.Request) (*PostData, error) {
 
 	var blogPost PostData
-	if err := s.decodeRequestBody(w, r, &blogPost); err != nil {
+	if err := help.DecodeRequestBody(w, r, &blogPost); err != nil {
 		return nil, err
 	}
 
@@ -177,10 +39,30 @@ func (s *server) bindRequestBody(w http.ResponseWriter, r *http.Request) (*PostD
 		blogPost.DatabaseKey = getDatabaseKeyFromURLPath(r, blogPost.UserUUID)
 	}
 
+	if strings.ToUpper(r.Method) == http.MethodPost {
+
+		if err = s.validateBlogPostRequest(&blogPost); err != nil {
+			return nil, err
+		}
+
+		if err = s.initBlogPostData(w, r, &blogPost); err != nil {
+			return nil, err
+		}
+	}
+
 	return &blogPost, nil
 }
 
-func (s *server) bindRequestParams(w http.ResponseWriter, r *http.Request) (*RequestParams, error) {
+func (s *Service) decodeRequestBody(w http.ResponseWriter, r *http.Request, bindObject interface{}) error {
+	if r.Body != nil {
+		defer r.Body.Close()
+	}
+
+	return json.NewDecoder(r.Body).Decode(&bindObject)
+}
+
+// BindRequestParams -
+func (s *Service) BindRequestParams(w http.ResponseWriter, r *http.Request) (*RequestParams, error) {
 
 	var reqParams RequestParams
 	var err error
@@ -264,7 +146,7 @@ func setQueryConfig(reqParams *RequestParams) error {
 	return nil
 }
 
-func (s *server) initBlogPostData(w http.ResponseWriter, r *http.Request, blogPost *PostData) error {
+func (s *Service) initBlogPostData(w http.ResponseWriter, r *http.Request, blogPost *PostData) error {
 
 	blogPost.UUID = uuid.New()
 
@@ -275,9 +157,9 @@ func (s *server) initBlogPostData(w http.ResponseWriter, r *http.Request, blogPo
 	return err
 }
 
-func (*server) setDateCreatedAt(blogPost *PostData) {
+func (*Service) setDateCreatedAt(blogPost *PostData) {
 
-	currentTime := getCurrentUTCTime()
+	currentTime := help.GetCurrentUTCTime()
 
 	blogPost.CreatedAt = currentTime
 	blogPost.UpdatedAt = currentTime
@@ -286,7 +168,7 @@ func (*server) setDateCreatedAt(blogPost *PostData) {
 	blogPost.Day = currentTime.Day()
 }
 
-func (*server) createDatabaseKey(blogPost *PostData) error {
+func (*Service) createDatabaseKey(blogPost *PostData) error {
 
 	if blogPost.CreatedAt.IsZero() {
 		return errors.New("PostData CreatedAt field not set")
@@ -348,7 +230,7 @@ func getDatabaseKeyFromURLPath(r *http.Request, blogUserUUID uuid.UUID) string {
 	return strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/blog/%s", blogUserUUID.String()))
 }
 
-func (s *server) validateBlogPostRequest(blogPost *PostData) error {
+func (s *Service) validateBlogPostRequest(blogPost *PostData) error {
 
 	if (blogPost.Author) == "" {
 		return errors.New("blog post 'author' field must not be empty")
@@ -369,7 +251,8 @@ func (s *server) validateBlogPostRequest(blogPost *PostData) error {
 	return nil
 }
 
-func populateZeroValueFieldsWithOldData(oldBlogPost, newBlogPost *PostData) {
+// PopulateZeroValueFieldsWithOldData -
+func (s *Service) PopulateZeroValueFieldsWithOldData(oldBlogPost, newBlogPost *PostData) {
 
 	// compare the 2 objects and decipher which fields need replacing
 	if newBlogPost.UUID == uuid.Nil {
@@ -404,5 +287,5 @@ func populateZeroValueFieldsWithOldData(oldBlogPost, newBlogPost *PostData) {
 	newBlogPost.Year = oldBlogPost.Year
 	newBlogPost.Month = oldBlogPost.Month
 	newBlogPost.Day = oldBlogPost.Day
-	newBlogPost.UpdatedAt = getCurrentUTCTime()
+	newBlogPost.UpdatedAt = help.GetCurrentUTCTime()
 }
