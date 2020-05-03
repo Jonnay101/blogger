@@ -18,7 +18,7 @@ import (
 func (s *Service) BindRequestBody(w http.ResponseWriter, r *http.Request) (*PostData, error) {
 
 	var blogPost PostData
-	if err := help.DecodeRequestBody(w, r, &blogPost); err != nil {
+	if err := s.decodeRequestBody(w, r, &blogPost); err != nil {
 		return nil, err
 	}
 
