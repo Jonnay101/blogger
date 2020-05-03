@@ -23,7 +23,7 @@ func (s *server) HandlerCreatePost() http.HandlerFunc {
 			return
 		}
 
-		if err = s.validateBlogPost(blogPost); err != nil {
+		if err = s.validateBlogPostRequest(blogPost); err != nil {
 			s.respond(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -116,7 +116,7 @@ func (s *server) HandlerUpdatePost() http.HandlerFunc {
 			return
 		}
 
-		replaceZeroValueFieldsWithOldData(oldBlogPost, newBlogPost)
+		populateZeroValueFieldsWithOldData(oldBlogPost, newBlogPost)
 
 		if err := s.DB.UpdateBlogPost(newBlogPost); err != nil {
 			if err == glitch.ErrRecordNotFound {
@@ -348,7 +348,7 @@ func getDatabaseKeyFromURLPath(r *http.Request, blogUserUUID uuid.UUID) string {
 	return strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/blog/%s", blogUserUUID.String()))
 }
 
-func (s *server) validateBlogPost(blogPost *PostData) error {
+func (s *server) validateBlogPostRequest(blogPost *PostData) error {
 
 	if (blogPost.Author) == "" {
 		return errors.New("blog post 'author' field must not be empty")
@@ -367,4 +367,42 @@ func (s *server) validateBlogPost(blogPost *PostData) error {
 	}
 
 	return nil
+}
+
+func populateZeroValueFieldsWithOldData(oldBlogPost, newBlogPost *PostData) {
+
+	// compare the 2 objects and decipher which fields need replacing
+	if newBlogPost.UUID == uuid.Nil {
+		newBlogPost.UUID = oldBlogPost.UUID
+	}
+
+	if newBlogPost.Author == "" {
+		newBlogPost.Author = oldBlogPost.Author
+	}
+
+	if newBlogPost.Title == "" {
+		newBlogPost.Title = oldBlogPost.Title
+	}
+
+	if newBlogPost.Content == "" {
+		newBlogPost.Content = oldBlogPost.Content
+	}
+
+	if newBlogPost.Category == "" {
+		newBlogPost.Category = oldBlogPost.Category
+	}
+
+	if newBlogPost.Metadata == nil {
+		newBlogPost.Metadata = oldBlogPost.Metadata
+	}
+
+	if newBlogPost.Images == nil {
+		newBlogPost.Images = oldBlogPost.Images
+	}
+
+	newBlogPost.CreatedAt = oldBlogPost.CreatedAt
+	newBlogPost.Year = oldBlogPost.Year
+	newBlogPost.Month = oldBlogPost.Month
+	newBlogPost.Day = oldBlogPost.Day
+	newBlogPost.UpdatedAt = getCurrentUTCTime()
 }

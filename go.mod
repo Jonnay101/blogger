@@ -9,6 +9,7 @@ require (
 	github.com/labstack/gommon v0.3.0
 	github.com/music-tribe/uuid v1.1.1
 	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.5.1
 	golang.org/x/tools v0.0.0-20200410194907-79a7a3126eef
 	google.golang.org/appengine v1.6.5
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22

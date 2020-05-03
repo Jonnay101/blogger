@@ -9,11 +9,12 @@ import (
 
 // Server -
 type Server interface {
-	SetDatabase(db database)
+	SetDatabase(db Database)
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
-type database interface {
+// Database -
+type Database interface {
 	StoreBlogPost(*PostData) error
 	FindBlogPostByKey(*RequestParams) (*PostData, error)
 	FindAllBlogPosts(*RequestParams) ([]*PostData, error)
@@ -22,7 +23,7 @@ type database interface {
 }
 
 type server struct {
-	DB     database
+	DB     Database
 	Router *mux.Router
 }
 
@@ -33,7 +34,7 @@ func NewServer() Server {
 	return s
 }
 
-func (s *server) SetDatabase(db database) {
+func (s *server) SetDatabase(db Database) {
 	s.DB = db
 }
 
